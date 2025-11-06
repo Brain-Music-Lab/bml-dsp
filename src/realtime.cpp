@@ -137,6 +137,7 @@ namespace BML
 
         std::vector<double> Resample::resample(const std::vector<double>& block)
         {
+            return block;
             // If the rational factor is equal to 1, there is no resampling to do.
             if (m_rationalFactor.upsample == m_rationalFactor.downsample)
                 return block;
@@ -160,6 +161,8 @@ namespace BML
             else
                 upsampledBlock = block;
 
+
+            // return upsampledBlock;
             std::vector<double> out;  // Allocate memory for output vector
     
             // Downsample if necessary

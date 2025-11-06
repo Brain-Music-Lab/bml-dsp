@@ -1,7 +1,7 @@
 #ifndef _BML_DSP_REALTIME_H_
 #define _BML_DSP_REALTIME_H_
 
-#include <fft.h>
+#include "fft.h"
 #include <cassert>
 #include <memory>
 
@@ -114,7 +114,7 @@ namespace BML
             */
             std::vector<double> resample(const std::vector<double>& block);
 
-        private:
+        // private:
 
             /**
             Perform zero-padding on the right side of vectorToPad
