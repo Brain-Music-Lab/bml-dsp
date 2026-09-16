@@ -24,6 +24,9 @@ add_library(bml-dsp
   ${PROJECT_SOURCE_DIR}/src/fft.cpp
   ${PROJECT_SOURCE_DIR}/src/filter.cpp
   ${PROJECT_SOURCE_DIR}/src/realtime.cpp
+  ${PROJECT_SOURCE_DIR}/src/util/csv.cpp
+
+  # inline includes
 )
 
 target_include_directories(bml-dsp 
@@ -71,6 +74,7 @@ set(TEST_DIR test)
 set(TEST_NAMES 
   bml_math_test
   circular_buffer_test
+  read_csv_test
 )
 
 enable_testing()

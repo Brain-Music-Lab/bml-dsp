@@ -77,7 +77,7 @@ namespace BML
 
             valuesToWrite = std::vector<double>({8.4, 9.2, 10.8, -90.1, 103.2});
             circBuff.write(valuesToWrite);
-            REQUIRE(circBuff.readNew().size() == 0);  // Fully lapped, so we think no new data has come in.
+            REQUIRE(circBuff.readNew().size() == 0);  // Fully lapped, so the buffer thinks no new data has come in.
 
             valuesToWrite = std::vector<double>({8.4, 9.2, -90.1, 103.2});
             circBuff.write(valuesToWrite);
