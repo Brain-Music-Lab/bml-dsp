@@ -28,8 +28,8 @@ void BML::CircularBuffer::write(double value)
 
 void BML::CircularBuffer::write(std::vector<double>& values)
 {
-    for each (double value in values)
-        write(value);
+    for (size_t i = 0; i < values.size(); i++)
+        write(values[i]);
 }
 
 double BML::CircularBuffer::read()

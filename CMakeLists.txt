@@ -21,10 +21,10 @@ project(bml-dsp)
 
 add_library(bml-dsp 
   ${PROJECT_SOURCE_DIR}/src/circular-buffer.cpp
-    # ${PROJECT_SOURCE_DIR}/src/fft.cpp
-    # ${PROJECT_SOURCE_DIR}/src/filter.cpp
-    # ${PROJECT_SOURCE_DIR}/src/realtime.cpp
-  )
+  ${PROJECT_SOURCE_DIR}/src/fft.cpp
+  ${PROJECT_SOURCE_DIR}/src/filter.cpp
+  ${PROJECT_SOURCE_DIR}/src/realtime.cpp
+)
 
 target_include_directories(bml-dsp 
   PRIVATE 
@@ -35,7 +35,7 @@ target_include_directories(bml-dsp
     # ${PROJECT_SOURCE_DIR}/vendor/fftw/include/fftw
   )
 
-target_compile_options(bml-dsp PUBLIC /MTd)
+# target_compile_options(bml-dsp PUBLIC /MTd)
 
 target_link_libraries(bml-dsp
   PUBLIC
@@ -63,5 +63,29 @@ target_link_libraries(bml-dsp
     #   ${PROJECT_SOURCE_DIR}/vendor/fftw/include
     #   "C:\\Program Files (x86)\\liblsl\\include")
 
+# Tests
+find_package(Catch2 3 REQUIRED)
 
+set(TEST_DIR test)
 
+set(TEST_NAMES 
+  bml_math_test
+  circular_buffer_test
+)
+
+enable_testing()
+
+foreach (test_name ${TEST_NAMES})
+  message(${test_name})
+  add_executable(${test_name} test/${test_name}.cpp)
+  target_link_libraries(${test_name} 
+    PRIVATE 
+      bml-dsp
+      Catch2::Catch2WithMain
+  )
+
+  add_test(
+    NAME ${test_name} 
+    COMMAND $<TARGET_FILE:${test_name}>
+  )
+endforeach()
