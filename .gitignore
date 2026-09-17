@@ -9,3 +9,4 @@ vendor/fftw/bin
 archive/
 Testing/
 **/__pycache__/
+*.csv
