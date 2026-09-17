@@ -3,7 +3,6 @@ import scipy as sp
 import csv
 from pathlib import Path
 import os
-import matplotlib.pyplot as plt
 
 
 if __name__ == "__main__":
