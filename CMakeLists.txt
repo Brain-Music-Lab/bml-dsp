@@ -4,20 +4,21 @@ project(bml-dsp)
 
 # include(GNUInstallDirs)
 
-# add_subdirectory()
-
+if (WIN32)
 # Specify the directory where the library is located
-# set(FFTW_LIB_DIR "${PROJECT_SOURCE_DIR}/vendor/fftw/lib")
+  set(FFTW_LIB_DIR "${PROJECT_SOURCE_DIR}/deps/fftw/lib/")
+  find_library(FFTW_LIB NAMES fftw3-3  PATHS ${FFTW_LIB_DIR})
 
-# Use find_library to locate the library
-# find_library(FFTW_LIB NAMES fftw3-3  PATHS ${FFTW_LIB_DIR})
-
-# Optionally, print the path of the library if found
-# if(FFTW_LIB)
-#     message(STATUS "Found FFTW library: ${FFTW_LIB}")
-# else()
-#     message(FATAL_ERROR "FFTW library not found!")
-# endif()
+  # Optionally, print the path of the library if found
+  if(FFTW_LIB)
+      message(STATUS "Found FFTW library: ${FFTW_LIB}")
+  else()
+      message(FATAL_ERROR "FFTW library not found!")
+  endif()
+elseif(UNIX)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(FFTW3 REQUIRED IMPORTED_TARGET fftw3)
+endif()
 
 add_library(bml-dsp 
   ${PROJECT_SOURCE_DIR}/src/circular-buffer.cpp
@@ -40,10 +41,17 @@ target_include_directories(bml-dsp
 
 # target_compile_options(bml-dsp PUBLIC /MTd)
 
-target_link_libraries(bml-dsp
-  PUBLIC
-  # ${FFTW_LIB}
-)
+if (WIN32)
+  target_link_libraries(bml-dsp
+    PUBLIC
+    # ${FFTW_LIB}
+  )
+elseif (UNIX)
+  target_link_libraries(bml-dsp
+    PRIVATE
+    PkgConfig::FFTW3
+  )
+endif()
 
 
 # set_property(TARGET ${project_dir} PROPERTY
@@ -75,6 +83,7 @@ set(TEST_NAMES
   bml_math_test
   circular_buffer_test
   read_csv_test
+  fft_test
 )
 
 enable_testing()
