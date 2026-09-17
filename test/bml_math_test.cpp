@@ -5,12 +5,16 @@
 #include <string>
 #include <sstream>
 
+#include <iostream>
+
 namespace BML
 {
     namespace Math
     {
         TEST_CASE("Greatest common factor")
         {
+            std::cout << __cplusplus << "\n";
+
             REQUIRE(findGcf(9, 18) == 9);
             REQUIRE(findGcf(4684, 11710) == 2342);
             REQUIRE(findGcf(11710, 4684) == 2342);

@@ -84,6 +84,7 @@ set(TEST_NAMES
   circular_buffer_test
   read_csv_test
   fft_test
+  filter_test
 )
 
 enable_testing()

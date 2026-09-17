@@ -27,7 +27,8 @@ namespace BML
 
         @return The result of the ifft.
         */
-        std::vector<double> ifft(std::vector<std::complex<double>> input);
+        std::vector<std::complex<double>> ifft(const std::vector<std::complex<double>>& input);
+        
     }
 }
 

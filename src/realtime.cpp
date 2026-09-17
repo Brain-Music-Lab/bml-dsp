@@ -75,7 +75,7 @@ namespace BML
             // The first iteration overlap values are 0
             for (size_t i = 0; i < out.size(); i++)
             {
-                out[i] = circConv[i];
+                out[i] = circConv[i].real();
                 if (i < m_signalSize - 1)
                     out[i] += m_overlap[i];
             }
@@ -83,7 +83,7 @@ namespace BML
             // Store the last m_signalSize - 1 elements of circConv in m_overlap
             auto start = circConv.size() - (m_signalSize - 1);
             for (size_t i = start; i < circConv.size(); i++)
-                m_overlap[i - start] = circConv[i];
+                m_overlap[i - start] = circConv[i].real();
                 
             // Finally return the convolved block
             return out;

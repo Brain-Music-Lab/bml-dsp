@@ -1,5 +1,8 @@
 #include "fft.h"
 
+#include <iostream>
+#include <exception>
+
 namespace BML
 {
     namespace FFT
@@ -7,7 +10,9 @@ namespace BML
         std::vector<std::complex<double>> fft(const std::vector<double>& input)
         {
             size_t N = input.size();
-            // if (N == 0) return {};
+            if (N == 0) 
+                throw std::runtime_error("Cannot calculate FFT from an empty array.");
+            
             // Create variables
             fftw_complex *in;
             fftw_complex *out;
@@ -45,45 +50,50 @@ namespace BML
             return output;
         }
 
-        std::vector<double> ifft(std::vector<std::complex<double>> input)
+        std::vector<std::complex<double>> ifft(const std::vector<std::complex<double>>& input)
         {
-            // // Create variables
-            // fftw_complex *in;
-            // fftw_complex *out;
-            // fftw_plan p;
+            size_t N = input.size();
+            if (N == 0)
+                throw std::runtime_error("Cannot calculate IFFT from an empty array.");
 
-            // // Allocate memory
-            // size_t N = input.size();
-            // in = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N);
-            // out = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N);
+            // Create variables
+            fftw_complex *in;
+            fftw_complex *out;
+            fftw_plan p;
 
-            // // Create FFT plan
-            // p = fftw_plan_dft_1d(N, in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
+            // Allocate memory
+            in = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N);
+            out = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N);
 
-            // //  Set input vector
-            // for (int i = 0; i < N; i++)
-            // {
-            //     in[i][0] = input[i].real();
-            //     in[i][1] = input[i].imag();
-            // }
+            // Create FFT plan
+            p = fftw_plan_dft_1d(N, in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
 
-            // // Execute FFT and save result to output vector
-            // fftw_execute(p);
-            // std::vector<double> output;
-            // output.reserve(N);
-            // for (int i = 0; i < N; i++)
-            // {
-            //     output.emplace_back((1.0 / N) * out[i][0]);
-            // }
+            //  Set input vector
+            for (int i = 0; i < N; i++)
+            {
+                in[i][0] = input[i].real();
+                in[i][1] = input[i].imag();
+            }
 
-            // // Free memory
-            // fftw_destroy_plan(p);
-            // fftw_free(in);
-            // fftw_free(out);
+            // Execute FFT and save result to output vector
+            fftw_execute(p);
+            std::vector<std::complex<double>> output;
+            output.reserve(N);
+            for (int i = 0; i < N; i++)
+            {
+                output.emplace_back(std::complex(
+                    (1.0/N) * out[i][0], 
+                    (1.0/N) * out[i][1])
+                );
+            }
 
-            // // Return result
-            // return output;
-            return {};
+            // Free memory
+            fftw_destroy_plan(p);
+            fftw_free(in);
+            fftw_free(out);
+
+            // Return result
+            return output;
         }
     }
 }
