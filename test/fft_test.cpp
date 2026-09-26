@@ -8,10 +8,10 @@
 
 #include "bml-dsp/util/csv.h"
 #include "bml-dsp/fft.h"
-#include "bml-dsp/bml-math.h"
+#include "bml-dsp/util/bml-math.h"
 #include <cmath>
 
-const double PI = 2.0 * std::acos(0.0);
+const double PI = BML::Math::PI;
 
 TEST_CASE("Testing FFT")
 {
@@ -20,12 +20,12 @@ TEST_CASE("Testing FFT")
         // Get Python truth for real
         std::stringstream ss;
         std::filesystem::path currentPath(__FILE__);
-        ss << currentPath.parent_path().string() << "/ground_truth/fft_test_real.csv";
+        ss << currentPath.parent_path().string() << "/ground_truth/data/fft_test_real.csv";
         std::vector<double> realTruth = BML::readOneLineCSV(ss.str());
 
         // and for imaginary
         ss.str("");
-        ss << currentPath.parent_path().string() << "/ground_truth/fft_test_imag.csv";
+        ss << currentPath.parent_path().string() << "/ground_truth/data/fft_test_imag.csv";
         std::vector<double> imagTruth = BML::readOneLineCSV(ss.str());
 
         // Replicate with C++
@@ -41,6 +41,8 @@ TEST_CASE("Testing FFT")
             y.emplace_back(
                 std::sin(f0 * 2.0 * PI * t[i]) + std::sin(f1 * 2.0 * PI * t[i]) + std::sin(f2 * 2.0 * PI * t[i]));
         }
+
+        // std::vector<double> y = BML::Math::genSineWave({1.0, 1.0, 1.0}, {f0, f1, f2}, t);
 
         auto output = BML::FFT::fft(y);
         REQUIRE(output.size() == realTruth.size());
@@ -77,12 +79,12 @@ TEST_CASE("Testing IFFT")
         // Get Python truth for real
         std::stringstream ss;
         std::filesystem::path currentPath(__FILE__);
-        ss << currentPath.parent_path().string() << "/ground_truth/ifft_test_real.csv";
+        ss << currentPath.parent_path().string() << "/ground_truth/data/ifft_test_real.csv";
         std::vector<double> realTruth = BML::readOneLineCSV(ss.str());
 
         // and for imaginary
         ss.str("");
-        ss << currentPath.parent_path().string() << "/ground_truth/ifft_test_imag.csv";
+        ss << currentPath.parent_path().string() << "/ground_truth/data/ifft_test_imag.csv";
         std::vector<double> imagTruth = BML::readOneLineCSV(ss.str());
 
         // Replicate with c++

@@ -26,7 +26,7 @@ void BML::CircularBuffer::write(double value)
         m_writerPointer = 0;
 }
 
-void BML::CircularBuffer::write(std::vector<double>& values)
+void BML::CircularBuffer::write(const std::vector<double>& values)
 {
     for (size_t i = 0; i < values.size(); i++)
         write(values[i]);

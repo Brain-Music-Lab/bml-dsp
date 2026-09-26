@@ -13,7 +13,7 @@ TEST_CASE("Reading a basic CSV file")
 {
     std::stringstream ss;
     std::filesystem::path currentPath(__FILE__);
-    ss << currentPath.parent_path().string() << "/ground_truth/read_csv_test.csv";
+    ss << currentPath.parent_path().string() << "/ground_truth/data/read_csv_test.csv";
     std::vector<double> output = BML::readOneLineCSV(ss.str());   
     std::vector<double> truth({4.1, 105.2, 3.8, 105.14, 20659.1, 20.2, -92.1});
 

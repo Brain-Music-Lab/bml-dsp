@@ -10,3 +10,5 @@ archive/
 Testing/
 **/__pycache__/
 *.csv
+.RData
+.Rhistory

@@ -3,11 +3,13 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <vector>
 
 namespace BML
 {
     namespace Math
     {
+        const double PI = 2.0 * std::acos(0.0);
         /**
         Find the greatest common factor of two values
 
@@ -16,13 +18,7 @@ namespace BML
 
         @return The greatest common factor of the two values
         */
-        inline size_t findGcf(size_t a, size_t b)
-        {
-            if (a == 0)
-                return b;
-                
-            return findGcf(b % a, a);
-        }
+        size_t findGcf(size_t a, size_t b);
 
         /**
         Find the least common multiple of two values
@@ -32,13 +28,7 @@ namespace BML
 
         @return The least common multiple of the two values
         */
-        inline size_t findLcm(size_t a, size_t b)
-        { 
-            size_t num = a * b;
-            size_t den = findGcf(a, b);
-
-            return num / den;
-        }
+        size_t findLcm(size_t a, size_t b);
 
         /**
         Return evenly spaced values within the interval [0.0, end). The spacing between intervals
@@ -50,17 +40,7 @@ namespace BML
 
         @return Array of evenly spaced values
         */
-        inline std::vector<double> arange(double start, double end, double step)
-        {
-            std::vector<double> out;  // Allocate memory
-            while (start < end)       // Construct the vector
-            {
-                out.push_back(start);
-                start += step;
-            }
-
-            return out;
-        }
+        std::vector<double> arange(double start, double end, double step);
 
         /**
         Return evenly spaced values within the interval [0.0, end). The spacing between intervals
@@ -70,8 +50,8 @@ namespace BML
 
         @return Array of evenly spaced values
         */
-        inline std::vector<double> arange(double end) { return arange(0.0, end, 1.0); }
-
+        std::vector<double> arange(double end);
+        
         /**
         Return evenly spaced values within the interval [start, end). The spacing between intervals
         is equal to 1.0.
@@ -81,7 +61,25 @@ namespace BML
 
         @return Array of evenly spaced values
         */
-        inline std::vector<double> arange(double start, double end) { return arange(start, end, 1.0); }
+        std::vector<double> arange(double start, double end);
+
+        double sinc(double x);
+        std::vector<double> sinc(const std::vector<double>& x);
+
+        std::vector<double> blackman(size_t windowSize);
+
+        size_t firstGreaterThan(double val, const std::vector<double>& arr) noexcept;
+
+        double lerp(double val, double x1, double y1, double x2, double y2);
+
+        double mean(const std::vector<double>& arr, bool excludeOutliers = false);
+
+        std::vector<double> normalize(const std::vector<double>& arr);
+
+        std::vector<double> genSineWave(
+            const std::vector<double>& amps, 
+            const std::vector<double>& freqs, 
+            const std::vector<double>& t);
     }
 }
 

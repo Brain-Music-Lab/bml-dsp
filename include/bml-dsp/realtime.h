@@ -38,50 +38,31 @@ namespace BML
         public:
 
             /**
-            Determine which method to use for convolution
-            */
-            enum class Method
-            {
-                OVERLAP_ADD,
-                OVERLAP_SAVE
-            };
-
-            /**
             Construct an instance of the Convolution class
 
-            @param lpf A signal to convolve with a blocked signal in the "convolve" method
+            @param lpf A filter to convolve with a blocked signal in the "convolve" method
             @param method Choose the method to use for convolution
             */
-            Convolution(const std::vector<double>& signal, Method method = Method::OVERLAP_ADD);
+            Convolution(const std::vector<double>& filter);
 
             /**
             Convolve a block of a time series signal with the signal specified from the constructor
             of the class
 
-            @param block An input block signal to use in convolution with the signal passed
+            @param block An input block signal to use in convolution with the filter passed
             to the constructor
 
             @return The input block convolved with the signal passed to the constructor.
             */
-            std::vector<double> convolve(const std::vector<double>& block);
+            std::vector<double> operator()(const std::vector<double>& block);
 
         private:
-            std::vector<double> m_signal;  // The signal passed to the constructor
-            size_t m_signalSize;           // The size of the signal passed to the constructor
-            std::vector<double> m_overlap; // Memory allocation for overlap portion of the convolution
-            Method m_convMethod;           // The method of convolution
+            std::vector<double> m_filter;  // The signal passed to the constructor
+            size_t m_filterSize;           // The size of the signal passed to the constructor
+            std::vector<double> m_history; // Memory allocation for overlap portion of the convolution
 
             /**
-            The overlap-add method of convolution
-
-            @param block The input block to convolve against the signal passed to the constructor
-
-            @return The convolved block
-            */
-            std::vector<double> overlapAdd(const std::vector<double>& block);
-
-            /**
-            The overlap-add method of convolution
+            The overlap-save method of convolution
 
             @param block The input block to convolve against the signal passed to the constructor
 
@@ -112,19 +93,9 @@ namespace BML
 
             @return The resampled block
             */
-            std::vector<double> resample(const std::vector<double>& block);
+            std::vector<double> operator()(const std::vector<double>& block);
 
-        // private:
-
-            /**
-            Perform zero-padding on the right side of vectorToPad
-
-            @param vectorToPad The vector to right-pad
-            @param numZeros The number of zeros to append to the vector
-
-            @return the padded vector
-            */
-            std::vector<double> zeroPad(const std::vector<double>& vectorToPad, int numZeros);
+        private:
 
             double m_oldFs;  // The original sample rate
             double m_newFs;  // The destination sample rate

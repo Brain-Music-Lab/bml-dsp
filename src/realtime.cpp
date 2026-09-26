@@ -1,7 +1,7 @@
 #include "realtime.h"
 
 #include "filter.h"
-#include "bml-math.h"
+#include "util/bml-math.h"
 
 #include <iostream>
 
@@ -21,78 +21,61 @@ namespace BML
             return { lcm/oldFs, lcm/newFs};
         }
 
-        Convolution::Convolution(const std::vector<double>& signal, Method method) :
-                m_signal(signal),
-                m_signalSize(m_signal.size()),
-                m_overlap(std::vector<double>(m_signalSize - 1, 0.0)),
-                m_convMethod(method)
+        Convolution::Convolution(const std::vector<double>& filter) :
+                m_filter(filter),
+                m_filterSize(filter.size()),
+                m_history(std::vector<double>(filter.size() - 1, 0.0))
             {}
 
-        std::vector<double> Convolution::convolve(const std::vector<double>& block)
+        std::vector<double> Convolution::operator()(const std::vector<double>& block)
         {
-            switch (m_convMethod)
+            // Implementation is overlap-save //
+
+            size_t B = block.size();  // B is the length of the block
+            size_t L = m_filter.size();  // L is the filter size
+            size_t N = B + L - 1;  // N is the size of the resultant convolution
+
+            // Get block with prepended history
+            std::vector<double> paddedBlock;
+            paddedBlock.reserve(N);
+            paddedBlock.insert(paddedBlock.end(), m_history.begin(), m_history.end());
+            paddedBlock.insert(paddedBlock.end(), block.begin(), block.end());
+
+            // Pad the filter
+            std::vector<double> paddedFilter;
+            paddedFilter.reserve(N);
+            paddedFilter.insert(paddedFilter.end(), m_filter.begin(), m_filter.end());
+            for (size_t i = L; i < N; i++)
             {
-                case Method::OVERLAP_ADD:
-                    return overlapAdd(block);
-
-                case Method::OVERLAP_SAVE:
-                    return overlapSave(block);
-
-                default:
-                    return block;
+                paddedFilter.emplace_back(0.0);
             }
-        }
 
+            // Update history
+            std::copy(paddedBlock.end() - L + 1, paddedBlock.end(), m_history.begin());
 
-        std::vector<double> Convolution::overlapAdd(const std::vector<double>& block)
-        {
-            // Allocate memory
-            std::vector<double> out(block.size(), 0.0);  // Vector ultimately returned from function
-            size_t block_size = block.size();  // Save block size
-            std::vector<double> tempFilter = m_signal;  // Create temporary filter
+            // Sanity check
+            assert(paddedFilter.size() == paddedBlock.size());
 
-            // Zero pad the filter
-            for (size_t i = 0; i < block_size - 1; i++)
-                tempFilter.push_back(0.0);
+            // Circular Convolution
+            std::vector<std::complex<double>> blockFft = FFT::fft(paddedBlock);
+            std::vector<std::complex<double>> filterFft = FFT::fft(paddedFilter);
 
-            // zero pad the block
-            std::vector<double> zeroPaddedBlock = block;
-            for (size_t i = 0; i < m_signalSize - 1; i++)
-                zeroPaddedBlock.push_back(0.0);
-
-            // Perform circular convolution
-            std::vector<std::complex<double>> blockFft = FFT::fft(zeroPaddedBlock);
-            std::vector<std::complex<double>> filterFft = FFT::fft(tempFilter);
             assert(blockFft.size() == filterFft.size());
             std::vector<std::complex<double>> multiplication;
             multiplication.reserve(blockFft.size());
+
             for (size_t i = 0; i < blockFft.size(); i++)
                 multiplication.emplace_back(blockFft[i] * filterFft[i]);
+
             auto circConv = FFT::ifft(multiplication);
 
-            // Store the entire circConv vector in out except for the last m_signalSize - 1 elements
-            // while i < m_signalSize, add the overlapped values from last iteration
-            // The first iteration overlap values are 0
-            for (size_t i = 0; i < out.size(); i++)
-            {
-                out[i] = circConv[i].real();
-                if (i < m_signalSize - 1)
-                    out[i] += m_overlap[i];
-            }
+            // Save the last B samples. The first L - 1 are garbage. Return the result
+            std::vector<double> out;
+            out.reserve(B);
+            for (size_t i = L - 1; i < N; i++)
+                out.emplace_back(circConv[i].real());
 
-            // Store the last m_signalSize - 1 elements of circConv in m_overlap
-            auto start = circConv.size() - (m_signalSize - 1);
-            for (size_t i = start; i < circConv.size(); i++)
-                m_overlap[i - start] = circConv[i].real();
-                
-            // Finally return the convolved block
             return out;
-        }
-
-        std::vector<double> Convolution::overlapSave(const std::vector<double>& block)
-        {
-            std::cout << "Overlap-Save is not yet implemented. Using the Overlap-Add method...";
-            return overlapAdd(block);
         }
 
         Resample::Resample(double oldFs, double newFs) :
@@ -107,8 +90,7 @@ namespace BML
             if (m_rationalFactor.upsample > 1)
             {
                 // Create a low-pass filter
-                double bw = Filter::findMaxBandwidth(oldFs);
-                auto lpfUp = Filter::createLowPassFilter(newFs, oldFs / 2.0, bw);
+                auto lpfUp = Filter::createLowPassFilter(newFs, oldFs / 2.0);
 
                 // Scale filter
                 std::vector<double> filter = lpfUp;
@@ -123,11 +105,9 @@ namespace BML
 
 
             // If necessary, create a convolution object for downsampling
-            // We only need the downwards convolution object if we are resampling to a lower frequency.
             if (m_rationalFactor.upsample < m_rationalFactor.downsample)
             {
-                double bwDown = Filter::findMaxBandwidth(newFs);
-                auto lpfDown = Filter::createLowPassFilter(oldFs * m_rationalFactor.upsample, newFs / 2.0, bwDown);
+                auto lpfDown = Filter::createLowPassFilter(oldFs * m_rationalFactor.upsample, newFs / 2.0);
                 m_convolutionDown = std::make_unique<Convolution>(lpfDown);
             }
             else
@@ -135,9 +115,8 @@ namespace BML
 
         }
 
-        std::vector<double> Resample::resample(const std::vector<double>& block)
+        std::vector<double> Resample::operator()(const std::vector<double>& block)
         {
-            return block;
             // If the rational factor is equal to 1, there is no resampling to do.
             if (m_rationalFactor.upsample == m_rationalFactor.downsample)
                 return block;
@@ -156,7 +135,7 @@ namespace BML
                 }
 
                 // Get upsampled block
-                upsampledBlock = m_convolutionUp->convolve(zeroPadded);
+                upsampledBlock = m_convolutionUp->operator()(zeroPadded);
             }
             else
                 upsampledBlock = block;
@@ -170,10 +149,10 @@ namespace BML
             {
                 std::vector<double> filteredBlock;  // Allocate memory
 
-                // If we upsample more than we downsample, we don't need to convolve again. 
+                // If we upsample more than we downsample, we don't need to convolve again.
                 // Therefore, there was no need to create the m_convolutionDown instance.
                 if (m_convolutionDown != nullptr)
-                    filteredBlock = m_convolutionDown->convolve(upsampledBlock);
+                    filteredBlock = m_convolutionDown->operator()(upsampledBlock);
 
                 for (size_t i = 0; i < filteredBlock.size(); i++)
                     if (i % m_rationalFactor.downsample == 0)
@@ -181,16 +160,6 @@ namespace BML
             }
             else
                 out = upsampledBlock;
-
-            return out;
-        }
-
-        std::vector<double> Resample::zeroPad(const std::vector<double>& vector_to_pad, int num_zeros)
-        {
-            // Allocate memory and right pad.
-            std::vector<double> out(vector_to_pad.begin(), vector_to_pad.end());
-            for (int i = 0; i < num_zeros; i++)
-                out.push_back(0.0);
 
             return out;
         }

@@ -12,7 +12,7 @@ namespace BML
 
         void write(double value);
 
-        void write(std::vector<double>& values);
+        void write(const std::vector<double>& values);
 
         double read();
 

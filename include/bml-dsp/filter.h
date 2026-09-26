@@ -36,7 +36,12 @@ namespace BML
         };
 
         /**
-        Create a low pass filter
+        Create a windowed-sinc low pass filter. 
+
+        References:
+            - https://tomroelandts.com/articles/how-to-create-a-simple-low-pass-filter
+            - https://fiiir.com/
+            - https://www.dspguide.com/ch16/2.htm
 
         @param samplerate The samplerate of the filter
         @param cutoffFreq The cutoff frequency of the filter
@@ -47,9 +52,12 @@ namespace BML
         A, convolve the filter vector with A.
         */
         std::vector<double> createLowPassFilter(double samplerate, 
-                                                double cutoffFreq, 
-                                                double transitionBand, 
-                                                Window window = Window::BLACKMAN);
+                                                double cutoffFreq);
+
+        // std::vector<double> windowedSincFilter(
+        //     double sampleRate,
+        //     double cutoffFreq,
+        //     )
     }
 }
 
