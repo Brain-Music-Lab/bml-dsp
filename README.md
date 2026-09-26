@@ -1,6 +1,10 @@
 # BML-DSP
 This is a signal processing library designed to be used with the custom max externals developed by the Brain Music Lab at the University of Colorado Boulder
 
+# Status of Resampling
+- Upsampling works
+- Downsampling and fractional resampling need to be validated through additional test cases in `test/resample_test.cpp`
+
 ## Testing
 This package utilizes Python for ground truth. To generate the ground truth necessary:
 - Go into the test directory
