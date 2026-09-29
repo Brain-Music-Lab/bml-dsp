@@ -31,14 +31,13 @@ def _test1():
     fs2 = 2048
     n_secs = 2
 
-    f0 = 1
-    f1 = 0
-    f2 = 0
+    f0 = 10
+    f1 = 12.8
+    f2 = 30
 
     t = np.arange(0, n_secs, 1/fs1)
-    y = np.sin(f0 * 2 * np.pi * t) + np.sin(f1 * 2 * np.pi * t) + np.sin(f2 * 2 * np.pi * t)
+    y = np.sin(f0 * 2 * np.pi * t) + np.sin(f1 * 2 * np.pi * t) + 0.2 * np.sin(f2 * 2 * np.pi * t)
 
-    t2 = np.arange(0, n_secs, 1/fs2)
     y_res = sp.signal.resample(y, n_secs * fs2)
 
     with open(os.path.join(Path(__file__).parent, "../data/resample_test1_y.csv"), "w") as f:
@@ -56,18 +55,14 @@ def _test2():
     fs2 = 11025
     n_secs = 1
 
-    f0 = 121
-    f1 = 158
-    f2 = 568
+    f0 = 120
+    f1 = 150
+    f2 = 400
 
     t = np.arange(0, n_secs, 1/fs1)
     y = np.sin(f0 * 2 * np.pi * t) + np.sin(f1 * 2 * np.pi * t) + np.sin(f2 * 2 * np.pi * t)
     y_res = sp.signal.resample(y, n_secs * fs2)
-    assert len(y) != len(y_res)
-
-    with open(os.path.join(Path(__file__).parent, "../data/resample_test2_t.csv"), "w") as f:
-        writer = csv.writer(f)
-        writer.writerow(t)
+    assert len(y) == 2 * len(y_res)
 
     with open(os.path.join(Path(__file__).parent, "../data/resample_test2_y.csv"), "w") as f:
         writer = csv.writer(f)
@@ -79,23 +74,19 @@ def _test2():
 
 
 def _test3():
-    # resample: 512 to 44100
+    # resample: 512 to 48000
     fs1 = 512
-    fs2 = 44100
+    fs2 = 48000
     n_secs = 1
 
-    f0 = 20
-    f1 = 90
-    f2 = 200
+    f0 = 5
+    f1 = 12
+    f2 = 30
 
     t = np.arange(0, n_secs, 1/fs1)
-    y = np.sin(f0 * 2 * np.pi * t) + np.sin(f1 * 2 * np.pi * t) + np.sin(f2 * 2 * np.pi * t)
+    y = np.sin(f0 * 2 * np.pi * t) + 0.5 * np.sin(f1 * 2 * np.pi * t) + 0.2 * np.sin(f2 * 2 * np.pi * t)
     y_res = sp.signal.resample(y, n_secs * fs2)
     assert len(y) != len(y_res)
-
-    with open(os.path.join(Path(__file__).parent, "../data/resample_test3_t.csv"), "w") as f:
-        writer = csv.writer(f)
-        writer.writerow(t)
 
     with open(os.path.join(Path(__file__).parent, "../data/resample_test3_y.csv"), "w") as f:
         writer = csv.writer(f)
@@ -109,8 +100,8 @@ def _test3():
 def gen_resample_truth():
     _test0()
     _test1()
-    # _test2()
-    # _test3()
+    _test2()
+    _test3()
 
 if __name__ == "__main__":
     gen_resample_truth()

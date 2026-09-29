@@ -4,38 +4,30 @@
 #include "bml-dsp/realtime.h"
 #include "bml-dsp/util/csv.h"
 
+#include<cmath>
+#include<numeric>
+#include<algorithm>
+
 namespace BML { 
 
 
 TEST_CASE("Toy example")
 {
-    /*
-    After resampling, signal size M is 200. 
-
-    sr_old = 100
-    sr_new = 200
-    
-    transition bandwidth = 100/200 = 0.5
-    Filter size L is equal to ceil(4 / 0.5) => 8 => 8 + 1 = 9 so it's odd
-
-    Convolution length should be 200 + 9 - 1 = 208, so 8 zeros are sent through the system to get the final result
-
-    The resampled signal is from L//2 to L//2 + M ==> 4 to 204
-    */
     // Get python truth.
     std::stringstream ss;
     std::filesystem::path currentPath(__FILE__);
     ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test0_y.csv";
     std::vector<double> y = BML::readOneLineCSV(ss.str());
 
-    std::vector<double> endZeros(8, 0.0);
-
     ss.str("");
     ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test0_y_truth.csv";
     std::vector<double> yTruth = BML::readOneLineCSV(ss.str());
 
-    RealTime::Resample resample(100.0, 200.0);
+    RealTime::Resample resample(100.0, 200.0, 50.0);
+    size_t numTaps = resample.Taps();
     auto resampY = resample(y);
+
+    std::vector<double> endZeros(numTaps-1, 0.0);
     auto end = resample(endZeros);
 
     std::vector<double> full = resampY;
@@ -44,44 +36,35 @@ TEST_CASE("Toy example")
         full.push_back(end[i]);
     }
 
-    std::vector resampSig(full.begin() + 4, full.begin() + 204);
+    size_t startIdx = (numTaps-1)/2;
+    size_t endIdx = full.size() - end.size() + (numTaps - 1) / 2;
+    std::vector resampSig(full.begin() + startIdx, full.begin() + endIdx);
 
     REQUIRE(resampSig.size() == yTruth.size());
-    for (size_t i = 0; i < yTruth.size(); i++)
+    
+    // At 200hz, 4 samples is approximately 20 ms
+    for (size_t i = 4; i < yTruth.size() - 4; i++)
     {
-        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.01));
+        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.001));
     }
 }
 
 TEST_CASE("More involved upsampling")
 {
-    /*
-    original signal is 1024
-    After upsampling by 4, signal size M is 4096. 
-
-    sr_old = 512
-    sr_new = 2048
-    
-    transition bandwidth = 512/2048 = 0.25
-    Filter size L is equal to ceil(4 / 0.25) => 16 => 16 + 1 = 17 so it's odd
-
-    Convolution length should be 4096 + 17 - 1 = 4112, so 16 zeros are sent through the system to get the final result
-
-    The resampled signal is from L//2 to L//2 + M ==> 8 to 4104
-    */
     // Get python truth.
     std::stringstream ss;
     std::filesystem::path currentPath(__FILE__);
     ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test1_y.csv";
     std::vector<double> y = BML::readOneLineCSV(ss.str());
 
-    std::vector<double> endZeros(16, 0.0);
-
     ss.str("");
     ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test1_y_truth.csv";
     std::vector<double> yTruth = BML::readOneLineCSV(ss.str());
 
-    RealTime::Resample resample(512.0, 2048.0);
+    RealTime::Resample resample(512.0, 2048.0, 100.0);
+    size_t numTaps = resample.Taps();
+    std::vector<double> endZeros(numTaps-1, 0.0);  // Needed to get tail of convolution
+
     auto resampY = resample(y);
     auto end = resample(endZeros);
 
@@ -91,16 +74,172 @@ TEST_CASE("More involved upsampling")
         full.push_back(end[i]);
     }
 
-    std::vector resampSig(full.begin() + 8, full.begin() + 4104);
+    size_t startIdx = (numTaps-1)/2;
+    size_t endIdx = full.size() - end.size() + (numTaps - 1) / 2;
+    std::vector resampSig(full.begin() + startIdx, full.begin() + endIdx);
 
     REQUIRE(resampSig.size() == yTruth.size());
-    for (size_t i = 0; i < yTruth.size(); i++)
+
+    // At a sampling rate of 4096, 44 samples is approximately 10ms
+    std::vector<double> errors(yTruth.size() - 88, 0.0);
+    for (size_t i = 44; i < yTruth.size() - 44; i++)
     {
-        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 1.0));  // This is too high of an error
-        // increasing the filter taps should help with that
+        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.1));  // Max error is 0.1
+        errors[i-44] = resampSig[i] - yTruth[i];
     }
 
-    std::cout << "\n";
+    std::vector<double> sqrError = errors;
+    double mean = std::accumulate(errors.begin(), errors.end(), 0.0) / static_cast<double>(errors.size());
+
+    std::sort(errors.begin(), errors.end());
+    for (size_t i = 1; i < errors.size(); i++)  // Proof of being sorted for median calculation
+    {
+        REQUIRE(errors[i - 1] <= errors[i]);
+    }
+
+    size_t idx;
+    if (errors.size() % 2 == 0)
+    {
+        idx = errors.size() / 2;
+    }
+    else
+    {
+        idx = (errors.size() - 1) / 2;
+    }
+
+    // Average and median errors are *much* less than max error.
+    REQUIRE(mean < 0.00001);
+    REQUIRE(errors[idx] < 0.00001);  // median
+}
+
+TEST_CASE("Downsampling")
+{
+    // Get python truth.
+    std::stringstream ss;
+    std::filesystem::path currentPath(__FILE__);
+    ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test2_y.csv";
+    std::vector<double> y = BML::readOneLineCSV(ss.str());
+
+    ss.str("");
+    ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test2_y_truth.csv";
+    std::vector<double> yTruth = BML::readOneLineCSV(ss.str());
+
+    RealTime::Resample resample(22050, 11025.0, 1.0);
+    size_t numTaps = resample.Taps();
+    std::vector<double> endZeros(numTaps-1, 0.0);  // Needed to get tail of convolution
+
+    auto resampY = resample(y);
+    auto end = resample(endZeros);
+
+    std::vector<double> full = resampY;
+    for (size_t i = 0; i < end.size(); i++)
+    {
+        full.push_back(end[i]);
+    }
+
+    // Extra division by two because of decimation by two. In effect, dividing filter size by 2
+    size_t startIdx = ((numTaps-1) / 2) / 2;
+    size_t endIdx = full.size() - end.size() + ((numTaps - 1) / 2) / 2;
+    std::vector resampSig(full.begin() + startIdx, full.begin() + endIdx);
+
+    REQUIRE(resampSig.size() == yTruth.size());
+
+    // At a sampling rate of 11025, 44 samples is approximately 10ms
+    std::vector<double> errors(yTruth.size() - 220, 0.0);
+    for (size_t i = 110; i < yTruth.size() - 110; i++)
+    {
+        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.1));  // Max error is 0.1
+        errors[i-110] = resampSig[i] - yTruth[i];
+    }
+
+    std::vector<double> sqrError = errors;
+    double mean = std::accumulate(errors.begin(), errors.end(), 0.0) / static_cast<double>(errors.size());
+
+    std::sort(errors.begin(), errors.end());
+    for (size_t i = 1; i < errors.size(); i++)  // Proof of being sorted for median calculation
+    {
+        REQUIRE(errors[i - 1] <= errors[i]);
+    }
+
+    size_t idx;
+    if (errors.size() % 2 == 0)
+    {
+        idx = errors.size() / 2;
+    }
+    else
+    {
+        idx = (errors.size() - 1) / 2;
+    }
+
+    // Average and median errors are *much* less than max error.
+    REQUIRE(mean < 0.00001);
+    REQUIRE(errors[idx] < 0.00001);  // median
+}
+
+TEST_CASE("Fractional resampling (512hz to 48000 hertz)")
+{
+    // Get python truth.
+    std::stringstream ss;
+    std::filesystem::path currentPath(__FILE__);
+    ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test3_y.csv";
+    std::vector<double> y = BML::readOneLineCSV(ss.str());
+
+    ss.str("");
+    ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test3_y_truth.csv";
+    std::vector<double> yTruth = BML::readOneLineCSV(ss.str());
+
+    RealTime::Resample resample(512.0, 48000.0, 300.0);
+    auto resampY = resample(y);
+    size_t numTaps = ((resample.Taps() - 1) / 4) + 1;
+
+    std::vector<double> endZeros(numTaps-1, 0.0);  // Needed to get tail of convolution
+    auto end = resample(endZeros);
+
+    std::vector<double> full = resampY;
+    for (size_t i = 0; i < end.size(); i++)
+    {
+        full.push_back(end[i]);
+    }
+
+    size_t startIdx = ((numTaps-1) / 2);
+    size_t endIdx = full.size() - end.size() + ((numTaps - 1) / 2);
+    std::vector resampSig(full.begin() + startIdx, full.begin() + endIdx);
+
+    REQUIRE(resampSig.size() == yTruth.size());
+
+    // At a sampling rate of 48000, 480 samples is approximately 10ms
+    std::vector<double> errors(yTruth.size() - 960, 0.0);
+    for (size_t i = 480; i < yTruth.size() - 480; i++)
+    {
+        // std::cout << resampSig[i] << ", ";
+        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.01));  // Max error is 0.1
+        errors[i-480] = resampSig[i] - yTruth[i];
+    }
+
+    // std::cout << "\n" << yTruth.size() / 4 << "\n";
+
+    std::vector<double> sqrError = errors;
+    double mean = std::accumulate(errors.begin(), errors.end(), 0.0) / static_cast<double>(errors.size());
+
+    std::sort(errors.begin(), errors.end());
+    for (size_t i = 1; i < errors.size(); i++)  // Proof of being sorted for median calculation
+    {
+        REQUIRE(errors[i - 1] <= errors[i]);
+    }
+
+    size_t idx;
+    if (errors.size() % 2 == 0)
+    {
+        idx = errors.size() / 2;
+    }
+    else
+    {
+        idx = (errors.size() - 1) / 2;
+    }
+
+    // Average and median errors are *much* less than max error.
+    REQUIRE(mean < 0.00001);
+    REQUIRE(errors[idx] < 0.00001);  // median
 }
 
 } // namespace BML

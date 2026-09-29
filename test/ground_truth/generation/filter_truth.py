@@ -11,7 +11,7 @@ def gen_filter_truth():
     old_sr = 50
     nyquist = old_sr / 2
     new_sr = 20000
-    bw = (old_sr / new_sr)
+    bw = 15 / new_sr
 
     fc = nyquist / new_sr
 

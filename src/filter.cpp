@@ -5,15 +5,14 @@ namespace BML
 {
     namespace Filter
     {
-        double findMaxBandwidth(double fc) { return 2.0 * fc; }
-        
-        std::vector<double> createLowPassFilter(
+        LowPassFilter::LowPassFilter(
             double samplerate,
-            double cutoffFreq
+            double cutoffFreq,
+            double transitionBandwidth
         )
         {
             // Calculate transition band for sample rate of 1 Hz
-            double bw = 2.0 * cutoffFreq / samplerate;
+            double bw = transitionBandwidth / samplerate;
 
             // Calculate number of filter taps necessary
             int numFilterTaps = std::ceil(4.0 / bw);
@@ -38,7 +37,7 @@ namespace BML
 
             // Apply window
             std::transform(
-                out.begin(), 
+                out.begin(),
                 out.end(), 
                 windowVector.begin(), 
                 out.begin(), 
@@ -48,7 +47,10 @@ namespace BML
             double sum = std::accumulate(out.begin(), out.end(), 0.0);
             std::transform(out.begin(), out.end(), out.begin(), [sum](const double val) {return val / sum;});
 
-            return out;
+            m_filter = std::move(out);
         }
+
+        std::vector<double> LowPassFilter::operator()() { return m_filter; }
+        int LowPassFilter::Taps() { return m_nTaps; }
     }
 }

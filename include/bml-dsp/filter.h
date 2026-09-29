@@ -35,29 +35,34 @@ namespace BML
             KAISER
         };
 
-        /**
-        Create a windowed-sinc low pass filter. 
+        class LowPassFilter
+        {
+        public:
+            /**
+            Create a windowed-sinc low pass filter. 
 
-        References:
-            - https://tomroelandts.com/articles/how-to-create-a-simple-low-pass-filter
-            - https://fiiir.com/
-            - https://www.dspguide.com/ch16/2.htm
+            References:
+                - https://tomroelandts.com/articles/how-to-create-a-simple-low-pass-filter
+                - https://fiiir.com/
+                - https://www.dspguide.com/ch16/2.htm
 
-        @param samplerate The samplerate of the filter
-        @param cutoffFreq The cutoff frequency of the filter
-        @param transitionBand The bandwidth, in hertz of the transition band
-        @param window The window to use.
+            @param samplerate The samplerate of the filter
+            @param cutoffFreq The cutoff frequency of the filter
+            @param bandwidthAdj The max transition bandwidth (which the number of taps is based on) is equal to 
+            2.0 * cutoffFrq / samplerate, but bandwidthAdj can alter this. The full calculation for the the transition 
+            bandwidth is tapsAdj * 2.0 * cutoffFrq / samplerate. A value of 1 leaves this unchanged. A value of less 
+            than one will shrink the filter transition bandwidth and increase the number of taps. A value of greater 
+            than one will grow the filter transition bandwidth and decrease the number of taps. Default to 1.0.
+            */
+            LowPassFilter(double samplerate, double cutoffFreq, double filterBandwidth);
 
-        @return A vector the represents the filter. To apply the filter to a signal
-        A, convolve the filter vector with A.
-        */
-        std::vector<double> createLowPassFilter(double samplerate, 
-                                                double cutoffFreq);
+            std::vector<double> operator()();
+            int Taps();
 
-        // std::vector<double> windowedSincFilter(
-        //     double sampleRate,
-        //     double cutoffFreq,
-        //     )
+        private:
+            std::vector<double> m_filter;
+            int m_nTaps;
+        };
     }
 }
 

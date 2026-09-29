@@ -78,41 +78,35 @@ namespace BML
             return out;
         }
 
-        Resample::Resample(double oldFs, double newFs) :
+        size_t Convolution::Taps() { return m_filterSize; }
+
+        Resample::Resample(double oldFs, double newFs, double filterBandwidthAdj) :
             m_oldFs(oldFs),
             m_newFs(newFs),
             m_rationalFactor(findRationalFactor(m_oldFs, m_newFs)),
-            m_convolutionUp(),
-            m_convolutionDown()
+            m_convolution()
         {
-            // If necessary, create a convolution object for upsampling
-            // If we are upsampling at all, we need the convolution object for upsampling
-            if (m_rationalFactor.upsample > 1)
+            // If sample rates are equal, there is no point.
+            if (m_rationalFactor.upsample == m_rationalFactor.downsample)
+                return;
+
+            // Make the convolution object based on which rational factor is larger
+            if (m_rationalFactor.upsample > m_rationalFactor.downsample)
             {
-                // Create a low-pass filter
-                auto lpfUp = Filter::createLowPassFilter(newFs, oldFs / 2.0);
-
-                // Scale filter
-                std::vector<double> filter = lpfUp;
-                for (size_t i = 0; i < filter.size(); i++)
-                    filter[i] *= m_rationalFactor.upsample;
-
-                // Create the convolution object for upsampling
-                m_convolutionUp = std::make_unique<Convolution>(filter);
+                Filter::LowPassFilter lpf(
+                    oldFs * static_cast<double>(m_rationalFactor.upsample),
+                    oldFs / 2.0, 
+                    filterBandwidthAdj);
+                m_convolution = std::make_unique<Convolution>(lpf());
             }
             else
-                m_convolutionUp = nullptr;  // TODO: Is this how we should set a smartpointer to null?
-
-
-            // If necessary, create a convolution object for downsampling
-            if (m_rationalFactor.upsample < m_rationalFactor.downsample)
             {
-                auto lpfDown = Filter::createLowPassFilter(oldFs * m_rationalFactor.upsample, newFs / 2.0);
-                m_convolutionDown = std::make_unique<Convolution>(lpfDown);
+                Filter::LowPassFilter lpf(
+                    oldFs * static_cast<double>(m_rationalFactor.upsample),
+                    newFs / 2.0,
+                    filterBandwidthAdj);
+                m_convolution = std::make_unique<Convolution>(lpf());
             }
-            else
-                m_convolutionDown = nullptr;  // TODO: Is this how we should set a smartpointer to null?
-
         }
 
         std::vector<double> Resample::operator()(const std::vector<double>& block)
@@ -128,20 +122,26 @@ namespace BML
                 // Create zero-padded version of signal
                 size_t zeroPadLen = block.size() * (size_t)m_rationalFactor.upsample;
                 std::vector<double> zeroPadded(zeroPadLen, 0.0);
-                for (size_t i = 0; i < zeroPadded.size(); i++)
+                for (size_t i = 0; i < zeroPadLen; i+= m_rationalFactor.upsample)
                 {
-                    if (i % m_rationalFactor.upsample == 0)
-                        zeroPadded[i] = block[i / m_rationalFactor.upsample];
+                    zeroPadded[i] = block[i / m_rationalFactor.upsample];
                 }
 
                 // Get upsampled block
-                upsampledBlock = m_convolutionUp->operator()(zeroPadded);
+                upsampledBlock = m_convolution->operator()(zeroPadded);
+
+                // Scale up by upsampling factor
+                double mult = static_cast<double>(m_rationalFactor.upsample);
+                std::transform(
+                    upsampledBlock.begin(), 
+                    upsampledBlock.end(),
+                    upsampledBlock.begin(),
+                    [mult](double value) {return value * mult;}
+                );
             }
             else
                 upsampledBlock = block;
-
-
-            // return upsampledBlock;
+            
             std::vector<double> out;  // Allocate memory for output vector
     
             // Downsample if necessary
@@ -149,19 +149,26 @@ namespace BML
             {
                 std::vector<double> filteredBlock;  // Allocate memory
 
-                // If we upsample more than we downsample, we don't need to convolve again.
-                // Therefore, there was no need to create the m_convolutionDown instance.
-                if (m_convolutionDown != nullptr)
-                    filteredBlock = m_convolutionDown->operator()(upsampledBlock);
+                // If we upsample more than we downsample, we don't need to convolve.
+                if (m_rationalFactor.upsample > m_rationalFactor.downsample)
+                    filteredBlock = upsampledBlock;
+                else
+                    filteredBlock = m_convolution->operator()(upsampledBlock);                
 
                 for (size_t i = 0; i < filteredBlock.size(); i++)
+                {
                     if (i % m_rationalFactor.downsample == 0)
+                    {
                         out.push_back(filteredBlock[i]);
+                    }
+                }
             }
             else
                 out = upsampledBlock;
 
             return out;
         }
+
+        size_t Resample::Taps() { return m_convolution.get()->Taps(); }
     }
 }

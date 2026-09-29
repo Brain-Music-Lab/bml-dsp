@@ -11,12 +11,13 @@ TEST_CASE("Sinc Filter")
     ss << currentPath.parent_path().string() << "/ground_truth/data/filter_h.csv";
     std::vector<double> h_truth = BML::readOneLineCSV(ss.str());
 
-    std::vector<double> filter = BML::Filter::createLowPassFilter(
+    BML::Filter::LowPassFilter filter(
         20000.0,  // Sample rate
-        25.0      // Cutoff Frequency
+        25.0,     // Cutoff Frequency
+        15.0      // Transition bandwidth
     );
 
-    REQUIRE(h_truth.size() == filter.size());
-    for (size_t i = 0; i < filter.size(); i++)
-        REQUIRE_THAT(h_truth[0], Catch::Matchers::WithinAbs(filter[0], 0.0001));
+    REQUIRE(h_truth.size() == filter().size());
+    for (size_t i = 0; i < filter().size(); i++)
+        REQUIRE_THAT(h_truth[0], Catch::Matchers::WithinAbs(filter()[0], 0.0001));
 }

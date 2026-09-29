@@ -56,6 +56,8 @@ namespace BML
             */
             std::vector<double> operator()(const std::vector<double>& block);
 
+            size_t Taps();
+
         private:
             std::vector<double> m_filter;  // The signal passed to the constructor
             size_t m_filterSize;           // The size of the signal passed to the constructor
@@ -84,7 +86,7 @@ namespace BML
             @param oldFs the original samplerate
             @param newFs the destination samplerate
             */
-            Resample(double oldFs, double newFs);
+            Resample(double oldFs, double newFs, double filterBandwidth);
 
             /**
             Resample a given block of a time series signal
@@ -94,6 +96,8 @@ namespace BML
             @return The resampled block
             */
             std::vector<double> operator()(const std::vector<double>& block);
+            
+            size_t Taps();
 
         private:
 
@@ -101,8 +105,7 @@ namespace BML
             double m_newFs;  // The destination sample rate
             RationalFactor m_rationalFactor;  // the rational factor to use in resampling
 
-            std::unique_ptr<Convolution> m_convolutionUp;  // Convolution instance needed in upsampling
-            std::unique_ptr<Convolution> m_convolutionDown;  // Convolution instance needed in downsampling
+            std::unique_ptr<Convolution> m_convolution;  // Convolution instance needed in resampling
 
         };
     }
