@@ -16,9 +16,16 @@ namespace BML
 
         double read();
 
-        std::vector<double> read(int valuesToRead);
+        std::vector<double> read(size_t valuesToRead);
 
         std::vector<double> readNew();
+
+        std::vector<double> readNew(std::vector<double>& out);
+
+        void setWritePos(int value);
+        void setReadPos(int value);
+        int getWritePos();
+        int getReadPos();
 
     private:
         size_t m_size;

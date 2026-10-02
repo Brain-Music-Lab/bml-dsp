@@ -9,6 +9,9 @@ namespace BML
 {
     namespace Math
     {
+#ifdef PI
+#undef PI
+#endif
         const double PI = 2.0 * std::acos(0.0);
         /**
         Find the greatest common factor of two values
@@ -71,6 +74,20 @@ namespace BML
         size_t firstGreaterThan(double val, const std::vector<double>& arr) noexcept;
 
         double lerp(double val, double x1, double y1, double x2, double y2);
+
+        /**
+        Based on the numpy implementation
+        */
+        std::vector<double> lerp(
+            const std::vector<double>& x, 
+            const std::vector<double>& xp,
+            const std::vector<double>& fp);
+
+        void lerp(
+            const std::vector<double>& x, 
+            const std::vector<double>& xp,
+            const std::vector<double>& fp,
+            std::vector<double>& out);
 
         double mean(const std::vector<double>& arr, bool excludeOutliers = false);
 

@@ -43,7 +43,7 @@ double BML::CircularBuffer::read()
     return returnValue;
 }
 
-std::vector<double> BML::CircularBuffer::read(int valuesToRead)
+std::vector<double> BML::CircularBuffer::read(size_t valuesToRead)
 {
     std::vector<double> values;
     values.reserve(valuesToRead);
@@ -72,3 +72,8 @@ std::vector<double> BML::CircularBuffer::readNew()
 
     return read(amountToRead);
 }
+
+void BML::CircularBuffer::setReadPos(int value) { m_readPointer = value; }
+void BML::CircularBuffer::setWritePos(int value) { m_writerPointer = value; }
+int BML::CircularBuffer::getReadPos() { return m_readPointer; }
+int BML::CircularBuffer::getWritePos() { return m_writerPointer; }

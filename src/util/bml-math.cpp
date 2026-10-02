@@ -84,6 +84,44 @@ namespace BML
             return y1 + ((y2 - y1)/(x2 - x1)) * (val - x1);
         }
 
+        std::vector<double> lerp(
+            const std::vector<double>& x,
+            const std::vector<double>& xp,
+            const std::vector<double>& fp)
+        {
+            std::vector<double> out;
+            out.reserve(x.size());
+
+            for (size_t i = 0; i < x.size(); i++)
+            {
+                auto it = std::upper_bound(xp.begin(), xp.end(), x[i]);
+                if (it == xp.begin()) { out.emplace_back(fp.at(0)); }
+                else
+                {
+                    size_t idx = it - xp.begin();
+                    out.emplace_back(lerp(
+                        x.at(i), 
+                        xp.at(idx - 1),
+                        fp.at(idx - 1),
+                        xp.at(idx),
+                        fp.at(idx)
+                    ));
+                }
+                
+            }
+
+            return out;
+        }
+
+        void lerp(
+            const std::vector<double>& x,
+            const std::vector<double>& xp,
+            const std::vector<double>& fp,
+            std::vector<double>& out)
+        {
+            out = lerp(x, xp, fp);
+        }
+
         size_t firstGreaterThan(double val, const std::vector<double>& arr) noexcept
         {
             for (size_t i = 0; i < arr.size(); i++)
