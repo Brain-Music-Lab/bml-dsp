@@ -93,7 +93,7 @@ namespace BML
             // Make the convolution object based on which rational factor is larger
             if (m_rationalFactor.upsample > m_rationalFactor.downsample)
             {
-                Filter::LowPassFilter lpf(
+                Filter::FIRLowPassFilter lpf(
                     oldFs * static_cast<double>(m_rationalFactor.upsample),
                     oldFs / 2.0, 
                     filterBandwidthAdj);
@@ -101,7 +101,7 @@ namespace BML
             }
             else
             {
-                Filter::LowPassFilter lpf(
+                Filter::FIRLowPassFilter lpf(
                     oldFs * static_cast<double>(m_rationalFactor.upsample),
                     newFs / 2.0,
                     filterBandwidthAdj);

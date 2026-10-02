@@ -35,7 +35,7 @@ namespace BML
             KAISER
         };
 
-        class LowPassFilter
+        class FIRLowPassFilter
         {
         public:
             /**
@@ -54,7 +54,7 @@ namespace BML
             than one will shrink the filter transition bandwidth and increase the number of taps. A value of greater 
             than one will grow the filter transition bandwidth and decrease the number of taps. Default to 1.0.
             */
-            LowPassFilter(double samplerate, double cutoffFreq, double filterBandwidth);
+            FIRLowPassFilter(double samplerate, double cutoffFreq, double filterBandwidth);
 
             std::vector<double> operator()();
             int Taps();

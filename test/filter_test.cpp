@@ -11,7 +11,7 @@ TEST_CASE("Sinc Filter")
     ss << currentPath.parent_path().string() << "/ground_truth/data/filter_h.csv";
     std::vector<double> h_truth = BML::readOneLineCSV(ss.str());
 
-    BML::Filter::LowPassFilter filter(
+    BML::Filter::FIRLowPassFilter filter(
         20000.0,  // Sample rate
         25.0,     // Cutoff Frequency
         15.0      // Transition bandwidth

@@ -5,7 +5,7 @@ namespace BML
 {
     namespace Filter
     {
-        LowPassFilter::LowPassFilter(
+        FIRLowPassFilter::FIRLowPassFilter(
             double samplerate,
             double cutoffFreq,
             double transitionBandwidth
@@ -50,7 +50,7 @@ namespace BML
             m_filter = std::move(out);
         }
 
-        std::vector<double> LowPassFilter::operator()() { return m_filter; }
-        int LowPassFilter::Taps() { return m_nTaps; }
+        std::vector<double> FIRLowPassFilter::operator()() { return m_filter; }
+        int FIRLowPassFilter::Taps() { return m_nTaps; }
     }
 }
