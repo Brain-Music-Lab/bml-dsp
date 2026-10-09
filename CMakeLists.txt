@@ -4,6 +4,7 @@ project(bml-dsp)
 
 # include(GNUInstallDirs)
 
+
 if (WIN32)
 # Specify the directory where the library is located
   set(FFTW_LIB_DIR "${PROJECT_SOURCE_DIR}/deps/fftw/lib/")
@@ -30,6 +31,8 @@ add_library(bml-dsp
 
   # inline includes
 )
+
+set_target_properties(bml-dsp PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 target_include_directories(bml-dsp 
   PRIVATE 
