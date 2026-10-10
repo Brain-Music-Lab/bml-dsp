@@ -27,22 +27,26 @@ namespace BML
                 m_history(std::vector<double>(filter.size() - 1, 0.0))
             {}
 
-        std::vector<double> Convolution::operator()(const std::vector<double>& block)
+        void Convolution::operator()(const std::vector<double>& block, std::vector<double>& out)
         {
             // Implementation is overlap-save //
+            out.clear();
+            out.resize(0);
 
             size_t B = block.size();  // B is the length of the block
             size_t L = m_filter.size();  // L is the filter size
             size_t N = B + L - 1;  // N is the size of the resultant convolution
 
             // Get block with prepended history
-            std::vector<double> paddedBlock;
+            std::vector<double>& paddedBlock = m_paddedBlock;
+            paddedBlock.clear();
             paddedBlock.reserve(N);
             paddedBlock.insert(paddedBlock.end(), m_history.begin(), m_history.end());
             paddedBlock.insert(paddedBlock.end(), block.begin(), block.end());
 
             // Pad the filter
-            std::vector<double> paddedFilter;
+            std::vector<double>& paddedFilter = m_paddedFilter;
+            paddedFilter.clear();
             paddedFilter.reserve(N);
             paddedFilter.insert(paddedFilter.end(), m_filter.begin(), m_filter.end());
             for (size_t i = L; i < N; i++)
@@ -57,8 +61,12 @@ namespace BML
             assert(paddedFilter.size() == paddedBlock.size());
 
             // Circular Convolution
-            std::vector<std::complex<double>> blockFft = FFT::fft(paddedBlock);
-            std::vector<std::complex<double>> filterFft = FFT::fft(paddedFilter);
+            std::vector<std::complex<double>>& blockFft = m_blockFft;
+            std::vector<std::complex<double>>& filterFft = m_filterFft;
+            blockFft.clear();
+            filterFft.clear();
+            FFT::fft(paddedBlock, blockFft);
+            FFT::fft(paddedFilter, filterFft);
 
             assert(blockFft.size() == filterFft.size());
             std::vector<std::complex<double>> multiplication;
@@ -67,20 +75,19 @@ namespace BML
             for (size_t i = 0; i < blockFft.size(); i++)
                 multiplication.emplace_back(blockFft[i] * filterFft[i]);
 
-            auto circConv = FFT::ifft(multiplication);
+            std::vector<std::complex<double>> circConv;
+            FFT::ifft(multiplication, circConv);
 
             // Save the last B samples. The first L - 1 are garbage. Return the result
-            std::vector<double> out;
+            out.clear();
             out.reserve(B);
             for (size_t i = L - 1; i < N; i++)
                 out.emplace_back(circConv[i].real());
-
-            return out;
         }
 
         size_t Convolution::Taps() { return m_filterSize; }
 
-        Resample::Resample(double oldFs, double newFs, double filterBandwidthAdj) :
+        Resample::Resample(double oldFs, double newFs, double transitionBandwidth) :
             m_oldFs(oldFs),
             m_newFs(newFs),
             m_rationalFactor(findRationalFactor(m_oldFs, m_newFs)),
@@ -96,7 +103,7 @@ namespace BML
                 Filter::FIRLowPassFilter lpf(
                     oldFs * static_cast<double>(m_rationalFactor.upsample),
                     oldFs / 2.0, 
-                    filterBandwidthAdj);
+                    transitionBandwidth);
                 m_convolution = std::make_unique<Convolution>(lpf());
             }
             else
@@ -104,16 +111,20 @@ namespace BML
                 Filter::FIRLowPassFilter lpf(
                     oldFs * static_cast<double>(m_rationalFactor.upsample),
                     newFs / 2.0,
-                    filterBandwidthAdj);
+                    transitionBandwidth);
                 m_convolution = std::make_unique<Convolution>(lpf());
             }
         }
 
-        std::vector<double> Resample::operator()(const std::vector<double>& block)
+        void Resample::operator()(const std::vector<double>& block, std::vector<double>& out)
         {
+            out.clear();
             // If the rational factor is equal to 1, there is no resampling to do.
             if (m_rationalFactor.upsample == m_rationalFactor.downsample)
-                return block;
+            {
+                out = block;
+                return;
+            }
 
             // Upsample if necessary
             std::vector<double> upsampledBlock;
@@ -128,7 +139,7 @@ namespace BML
                 }
 
                 // Get upsampled block
-                upsampledBlock = m_convolution->operator()(zeroPadded);
+                m_convolution->operator()(zeroPadded, upsampledBlock);
 
                 // Scale up by upsampling factor
                 double mult = static_cast<double>(m_rationalFactor.upsample);
@@ -141,9 +152,7 @@ namespace BML
             }
             else
                 upsampledBlock = block;
-            
-            std::vector<double> out;  // Allocate memory for output vector
-    
+                
             // Downsample if necessary
             if (m_rationalFactor.downsample > 1)  // If value is 1 no need to downsample
             {
@@ -153,20 +162,19 @@ namespace BML
                 if (m_rationalFactor.upsample > m_rationalFactor.downsample)
                     filteredBlock = upsampledBlock;
                 else
-                    filteredBlock = m_convolution->operator()(upsampledBlock);                
+                    m_convolution->operator()(upsampledBlock, filteredBlock);                
 
+                out.reserve(filteredBlock.size());
                 for (size_t i = 0; i < filteredBlock.size(); i++)
                 {
                     if (i % m_rationalFactor.downsample == 0)
                     {
-                        out.push_back(filteredBlock[i]);
+                        out.emplace_back(filteredBlock[i]);
                     }
                 }
             }
             else
-                out = upsampledBlock;
-
-            return out;
+                out = std::move(upsampledBlock);
         }
 
         size_t Resample::Taps() { return m_convolution.get()->Taps(); }

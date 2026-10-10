@@ -17,7 +17,7 @@ namespace BML
         
         @return The fft. This takes the form of a vector of complex numbers.
         */
-        std::vector<std::complex<double>> fft(const std::vector<double>& input);
+        void fft(const std::vector<double>& input, std::vector<std::complex<double>>& output);
 
         /**
         Perform an ifft on a set of input frequency values.
@@ -27,7 +27,7 @@ namespace BML
 
         @return The result of the ifft.
         */
-        std::vector<std::complex<double>> ifft(const std::vector<std::complex<double>>& input);
+        void ifft(const std::vector<std::complex<double>>& input, std::vector<std::complex<double>>& output);
         
     }
 }

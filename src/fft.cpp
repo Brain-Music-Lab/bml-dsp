@@ -2,56 +2,56 @@
 
 #include <iostream>
 #include <exception>
+#include <cstring>
 
 namespace BML
 {
     namespace FFT
     {
-        std::vector<std::complex<double>> fft(const std::vector<double>& input)
+        void fft(const std::vector<double>& input, std::vector<std::complex<double>>& output)
         {
             size_t N = input.size();
             if (N == 0) 
                 throw std::runtime_error("Cannot calculate FFT from an empty array.");
             
             // Create variables
-            fftw_complex *in;
+            double *in;
             fftw_complex *out;
             fftw_plan p;
 
             // Allocate memory
-            in = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N);
-            out = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N);
+            in = (double*)fftw_malloc(sizeof(double) * N);
+
+            size_t out_size = N / 2 + 1;
+            out = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * out_size);
 
             // Create FFT plan
-            p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+            p = fftw_plan_dft_r2c_1d(N, in, out, FFTW_ESTIMATE);
 
             //  Set input vector
-            for (int i = 0; i < N; i++)
-            {
-                in[i][0] = input[i];
-                in[i][1] = 0.0;
-            }
+            std::copy(input.begin(), input.end(), in);
 
             // Execute FFT and save result to output vector
-            fftw_execute(p);  // Segfault is here
-            std::vector<std::complex<double>> output;
-            output.reserve(N);
-            for (int i = 0; i < N; i++)
+            fftw_execute(p);
+            output.clear();
+            output.resize(N);
+            
+            std::memcpy(output.data(), out, out_size * sizeof(std::complex<double>));
+
+            for (int i = out_size; i < N; i++)
             {
-                output.emplace_back(std::complex<double>(out[i][0], out[i][1]));
+                output[i] = std::conj(output[N-i]);
             }
 
             // Free memory
             fftw_destroy_plan(p);
             fftw_free(in);
             fftw_free(out);
-
-            // Return result
-            return output;
         }
 
-        std::vector<std::complex<double>> ifft(const std::vector<std::complex<double>>& input)
+        void ifft(const std::vector<std::complex<double>>& input, std::vector<std::complex<double>>& output)
         {
+            output.clear();
             size_t N = input.size();
             if (N == 0)
                 throw std::runtime_error("Cannot calculate IFFT from an empty array.");
@@ -77,13 +77,14 @@ namespace BML
 
             // Execute FFT and save result to output vector
             fftw_execute(p);
-            std::vector<std::complex<double>> output;
-            output.reserve(N);
+            double N_d = static_cast<double>(N);
+            output.clear();
+            output.resize(N);
             for (int i = 0; i < N; i++)
             {
-                output.emplace_back(std::complex(
-                    (1.0/N) * out[i][0], 
-                    (1.0/N) * out[i][1])
+                output[i] = std::complex(
+                    (1.0/N_d) * out[i][0],
+                    (1.0/N_d) * out[i][1]
                 );
             }
 
@@ -91,9 +92,6 @@ namespace BML
             fftw_destroy_plan(p);
             fftw_free(in);
             fftw_free(out);
-
-            // Return result
-            return output;
         }
     }
 }

@@ -2,8 +2,23 @@ cmake_minimum_required(VERSION 3.22)
 
 project(bml-dsp)
 
-# include(GNUInstallDirs)
+if (WIN32)
 
+  if (NOT DEFINED CMAKE_BUILD_TYPE)
+    message(FATAL_ERROR "CMAKE_BUILD_TYPE not set. Defaulting to 'Release'.")
+    set(CMAKE_BUILD_TYPE Release)
+  else()
+    message(STATUS "CMAKE_BUILD_TYPE IS ${CMAKE_BUILD_TYPE}")
+  endif()
+
+elseif (UNIX)
+  if (CMAKE_BUILD_TYPE STREQUAL "")
+      message(WARNING "CMAKE_BUILD_TYPE not set. Defaulting to 'Release'.")
+      set(CMAKE_BUILD_TYPE Release)
+    else()
+      message(STATUS "CMAKE_BUILD_TYPE IS ${CMAKE_BUILD_TYPE}")
+    endif()
+endif()
 
 if (WIN32)
 # Specify the directory where the library is located
@@ -94,6 +109,7 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${PROJECT_SOURCE_DIR})
     resample_test
     convolution_test
     filter_test
+    resample_benchmark
   )
 
   enable_testing()
@@ -101,6 +117,7 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${PROJECT_SOURCE_DIR})
   foreach (test_name ${TEST_NAMES})
     message(${test_name})
     add_executable(${test_name} test/${test_name}.cpp)
+
     target_link_libraries(${test_name} 
       PRIVATE 
         bml-dsp

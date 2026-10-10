@@ -117,12 +117,14 @@ TEST_CASE("Convolution Testing")
 
     RealTime::Convolution conv(h);
 
+    std::vector<double> resultsVec;
     std::vector<std::vector<double>> resultsMat;
     std::vector<double> outVec;
 
     for (size_t i = 0; i < xBlocks.size(); i++)
     {
-        resultsMat.push_back(conv(xBlocks[i]));
+        conv(xBlocks[i], resultsVec);
+        resultsMat.push_back(resultsVec);
     }
 
     outVec.reserve(B * resultsMat.size());

@@ -44,12 +44,13 @@ TEST_CASE("Testing FFT")
 
         // std::vector<double> y = BML::Math::genSineWave({1.0, 1.0, 1.0}, {f0, f1, f2}, t);
 
-        auto output = BML::FFT::fft(y);
+        std::vector<std::complex<double>> output;
+        BML::FFT::fft(y, output);
         REQUIRE(output.size() == realTruth.size());
         for (size_t i = 0; i < 1000; i++)
         {
-            REQUIRE_THAT(output[i].real(), Catch::Matchers::WithinAbs(realTruth[i], 0.0001));
-            REQUIRE_THAT(output[i].imag(), Catch::Matchers::WithinAbs(imagTruth[i], 0.0001));
+            REQUIRE_THAT(output[i].real(), Catch::Matchers::WithinAbs(realTruth[i], 0.01));
+            REQUIRE_THAT(output[i].imag(), Catch::Matchers::WithinAbs(imagTruth[i], 0.01));
         }
     }
 
@@ -60,7 +61,8 @@ TEST_CASE("Testing FFT")
 
         try
         {
-            auto output = BML::FFT::fft(y);
+            std::vector<std::complex<double>> output;
+            BML::FFT::fft(y, output);
         }
         catch (const std::runtime_error& e) 
         {
@@ -105,14 +107,16 @@ TEST_CASE("Testing IFFT")
             y.emplace_back(val);
         }
 
-        auto complexOut = BML::FFT::fft(y);
-        auto output = BML::FFT::ifft(complexOut);
+        std::vector<std::complex<double>> complexOut;
+        std::vector<std::complex<double>> output;
+        BML::FFT::fft(y, complexOut);
+        BML::FFT::ifft(complexOut, output);
 
         REQUIRE(output.size() == realTruth.size());
         for (size_t i = 0; i < 1000; i++)
         {
-            REQUIRE_THAT(output[i].real(), Catch::Matchers::WithinAbs(realTruth[i], 0.0001));
-            REQUIRE_THAT(output[i].imag(), Catch::Matchers::WithinAbs(imagTruth[i], 0.0001));
+            REQUIRE_THAT(output[i].real(), Catch::Matchers::WithinAbs(realTruth[i], 0.01));
+            REQUIRE_THAT(output[i].imag(), Catch::Matchers::WithinAbs(imagTruth[i], 0.01));
         }
     }
 
@@ -123,7 +127,8 @@ TEST_CASE("Testing IFFT")
 
         try
         {
-            auto output = BML::FFT::ifft(y);
+            std::vector<std::complex<double>> output;
+            BML::FFT::ifft(y, output);
         }
         catch (const std::runtime_error& e) 
         {

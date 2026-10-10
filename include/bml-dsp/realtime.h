@@ -54,7 +54,7 @@ namespace BML
 
             @return The input block convolved with the signal passed to the constructor.
             */
-            std::vector<double> operator()(const std::vector<double>& block);
+            void operator()(const std::vector<double>& block, std::vector<double>& out);
 
             size_t Taps();
 
@@ -63,6 +63,14 @@ namespace BML
             size_t m_filterSize;           // The size of the signal passed to the constructor
             std::vector<double> m_history; // Memory allocation for overlap portion of the convolution
 
+            std::vector<double> m_paddedBlock;
+            std::vector<double> m_paddedFilter;
+
+            std::vector<std::complex<double>> m_blockFft;
+            std::vector<std::complex<double>> m_filterFft;
+            std::vector<std::complex<double>> m_multiplication;
+            std::vector<std::complex<double>> m_circConv;
+
             /**
             The overlap-save method of convolution
 
@@ -70,7 +78,7 @@ namespace BML
 
             @return The convolved block
             */
-            std::vector<double> overlapSave(const std::vector<double>& block);
+            void overlapSave(const std::vector<double>& block, std::vector<double>& out);
         };
 
         /**
@@ -95,7 +103,7 @@ namespace BML
 
             @return The resampled block
             */
-            std::vector<double> operator()(const std::vector<double>& block);
+            void operator()(const std::vector<double>& block, std::vector<double>& out);
             
             size_t Taps();
 
@@ -106,6 +114,7 @@ namespace BML
             RationalFactor m_rationalFactor;  // the rational factor to use in resampling
 
             std::unique_ptr<Convolution> m_convolution;  // Convolution instance needed in resampling
+
 
         };
     }

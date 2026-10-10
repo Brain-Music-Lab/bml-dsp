@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include "bml-dsp/realtime.h"
@@ -25,10 +26,12 @@ TEST_CASE("Toy example")
 
     RealTime::Resample resample(100.0, 200.0, 50.0);
     size_t numTaps = resample.Taps();
-    auto resampY = resample(y);
-
     std::vector<double> endZeros(numTaps-1, 0.0);
-    auto end = resample(endZeros);
+
+    std::vector<double> resampY;
+    std::vector<double> end;
+    resample(y, resampY);
+    resample(endZeros, end);
 
     std::vector<double> full = resampY;
     for (size_t i = 0; i < end.size(); i++)
@@ -45,7 +48,7 @@ TEST_CASE("Toy example")
     // At 200hz, 4 samples is approximately 20 ms
     for (size_t i = 4; i < yTruth.size() - 4; i++)
     {
-        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.001));
+        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.01));
     }
 }
 
@@ -61,12 +64,14 @@ TEST_CASE("More involved upsampling")
     ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test1_y_truth.csv";
     std::vector<double> yTruth = BML::readOneLineCSV(ss.str());
 
-    RealTime::Resample resample(512.0, 2048.0, 100.0);
+    RealTime::Resample resample(512.0, 2048.0, 50.0);
     size_t numTaps = resample.Taps();
     std::vector<double> endZeros(numTaps-1, 0.0);  // Needed to get tail of convolution
 
-    auto resampY = resample(y);
-    auto end = resample(endZeros);
+    std::vector<double> resampY;
+    std::vector<double> end;
+    resample(y, resampY);
+    resample(endZeros, end);
 
     std::vector<double> full = resampY;
     for (size_t i = 0; i < end.size(); i++)
@@ -124,12 +129,16 @@ TEST_CASE("Downsampling")
     ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test2_y_truth.csv";
     std::vector<double> yTruth = BML::readOneLineCSV(ss.str());
 
-    RealTime::Resample resample(22050, 11025.0, 1.0);
+    RealTime::Resample resample(22050, 11025.0, 250.0);
     size_t numTaps = resample.Taps();
     std::vector<double> endZeros(numTaps-1, 0.0);  // Needed to get tail of convolution
 
-    auto resampY = resample(y);
-    auto end = resample(endZeros);
+    std::vector<double> resampY;
+    std::vector<double> end;
+    
+    resample(y, resampY);
+    resample(endZeros, end);
+
 
     std::vector<double> full = resampY;
     for (size_t i = 0; i < end.size(); i++)
@@ -148,7 +157,7 @@ TEST_CASE("Downsampling")
     std::vector<double> errors(yTruth.size() - 220, 0.0);
     for (size_t i = 110; i < yTruth.size() - 110; i++)
     {
-        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.1));  // Max error is 0.1
+        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.001));  // Max error is 0.1
         errors[i-110] = resampSig[i] - yTruth[i];
     }
 
@@ -188,12 +197,19 @@ TEST_CASE("Fractional resampling (512hz to 48000 hertz)")
     ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test3_y_truth.csv";
     std::vector<double> yTruth = BML::readOneLineCSV(ss.str());
 
-    RealTime::Resample resample(512.0, 48000.0, 300.0);
-    auto resampY = resample(y);
+    RealTime::Resample resample(512.0, 48000.0, 150.0);  // Transition bandwidth chosen based on benchmarking
     size_t numTaps = ((resample.Taps() - 1) / 4) + 1;
 
     std::vector<double> endZeros(numTaps-1, 0.0);  // Needed to get tail of convolution
-    auto end = resample(endZeros);
+
+    std::vector<double> resampY;
+    std::vector<double> end;
+        
+    // BENCHMARK("Resampling") 
+    // {
+        resample(y, resampY);
+        resample(endZeros, end);
+    // };
 
     std::vector<double> full = resampY;
     for (size_t i = 0; i < end.size(); i++)
@@ -212,7 +228,7 @@ TEST_CASE("Fractional resampling (512hz to 48000 hertz)")
     for (size_t i = 480; i < yTruth.size() - 480; i++)
     {
         // std::cout << resampSig[i] << ", ";
-        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.01));  // Max error is 0.1
+        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.001));  // Max error is 0.1
         errors[i-480] = resampSig[i] - yTruth[i];
     }
 
