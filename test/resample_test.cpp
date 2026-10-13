@@ -200,25 +200,15 @@ TEST_CASE("Fractional resampling (512hz to 48000 hertz)")
     RealTime::Resample resample(512.0, 48000.0, 150.0);  // Transition bandwidth chosen based on benchmarking
     size_t numTaps = ((resample.Taps() - 1) / 4) + 1;
 
-    std::vector<double> endZeros(numTaps-1, 0.0);  // Needed to get tail of convolution
-
-    std::vector<double> resampY;
-    std::vector<double> end;
-        
-    // BENCHMARK("Resampling") 
-    // {
-        resample(y, resampY);
-        resample(endZeros, end);
-    // };
-
-    std::vector<double> full = resampY;
-    for (size_t i = 0; i < end.size(); i++)
+    std::vector<double> full;
+    for (int i = 0; i < 1000; i++)
     {
-        full.push_back(end[i]);
+        y.push_back(0.0);
     }
+    resample(y, full);
 
     size_t startIdx = ((numTaps-1) / 2);
-    size_t endIdx = full.size() - end.size() + ((numTaps - 1) / 2);
+    size_t endIdx = startIdx + 48000;
     std::vector resampSig(full.begin() + startIdx, full.begin() + endIdx);
 
     REQUIRE(resampSig.size() == yTruth.size());
@@ -256,6 +246,91 @@ TEST_CASE("Fractional resampling (512hz to 48000 hertz)")
     // Average and median errors are *much* less than max error.
     REQUIRE(mean < 0.00001);
     REQUIRE(errors[idx] < 0.00001);  // median
+}
+
+TEST_CASE("Fractional resampling in blocks (512hz to 48000 hertz)")
+{
+    // Get python truth.
+    std::stringstream ss;
+    std::filesystem::path currentPath(__FILE__);
+    ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test3_y.csv";
+    std::vector<double> y = BML::readOneLineCSV(ss.str());
+
+    ss.str("");
+    ss << currentPath.parent_path().string() << "/ground_truth/data/resample_test3_y_truth.csv";
+    std::vector<double> yTruth = BML::readOneLineCSV(ss.str());
+
+    // Set up resampler
+    RealTime::Resample resample(512.0, 48000.0, 150.0);  // Transition bandwidth chosen based on benchmarking
+    size_t numTaps = ((resample.Taps() - 1) / 4) + 1;
+
+    // zero pad
+    std::vector<double> full;
+    for (int i = 0; i < 1000; i++)
+    {
+        y.push_back(0.0);
+    }
+
+    // resample on an input block of size 50
+    size_t block_size = 50;
+    size_t itIdx = 0;
+    while (itIdx * block_size < y.size() - block_size)
+    {
+        // set iterators
+        auto startIt = y.begin() + itIdx * block_size;
+        auto endIt = startIt + block_size;
+
+        // set input and output
+        std::vector<double> tempIn(startIt, endIt);
+        std::vector<double> tempOut;
+        resample(tempIn, tempOut);  // resample
+
+        // save output
+        for (size_t i = 0; i < tempOut.size(); i++)
+        {
+            full.push_back(tempOut[i]);
+        }
+
+        itIdx += 1;
+    }
+
+    // create resampled vector
+    size_t startIdx = ((numTaps-1) / 2);
+    size_t endIdx = startIdx + 48000;
+    std::vector resampSig(full.begin() + startIdx, full.begin() + endIdx);
+
+    REQUIRE(resampSig.size() == yTruth.size());
+
+    // At a sampling rate of 48000, 480 samples is approximately 10ms
+    std::vector<double> errors(yTruth.size() - 960, 0.0);
+    for (size_t i = 480; i < yTruth.size() - 480; i++)
+    {
+        REQUIRE_THAT(resampSig[i], Catch::Matchers::WithinAbs(yTruth[i], 0.1));  // Max error is 0.1
+        errors[i-480] = resampSig[i] - yTruth[i];
+    }
+
+    std::vector<double> sqrError = errors;
+    double mean = std::accumulate(errors.begin(), errors.end(), 0.0) / static_cast<double>(errors.size());
+
+    std::sort(errors.begin(), errors.end());
+    for (size_t i = 1; i < errors.size(); i++)  // Proof of being sorted for median calculation
+    {
+        REQUIRE(errors[i - 1] <= errors[i]);
+    }
+
+    size_t idx;
+    if (errors.size() % 2 == 0)
+    {
+        idx = errors.size() / 2;
+    }
+    else
+    {
+        idx = (errors.size() - 1) / 2;
+    }
+
+    // Average and median errors are *much* less than max error.
+    REQUIRE(mean < 0.001);
+    REQUIRE(errors[idx] < 0.001);  // median
 }
 
 } // namespace BML

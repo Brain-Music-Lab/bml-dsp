@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import scipy as sp
+import matplotlib.pyplot as plt
 
 
 def _test0():
@@ -84,8 +85,24 @@ def _test3():
     f2 = 30
 
     t = np.arange(0, n_secs, 1/fs1)
+    t2 = np.arange(0, n_secs, 1/fs2)
+
     y = np.sin(f0 * 2 * np.pi * t) + 0.5 * np.sin(f1 * 2 * np.pi * t) + 0.2 * np.sin(f2 * 2 * np.pi * t)
     y_res = sp.signal.resample(y, n_secs * fs2)
+
+    # with open(os.path.join(Path(__file__).parent, "../data/dataOut.csv"), "r") as f:
+    #     reader = csv.reader(f)
+    #     dataOut = next(reader)
+
+    # dataOut = np.array([float(ele) for ele in dataOut])
+
+    # start = 0
+    # end = start + 47000
+    # plt.plot(t2[start:end], dataOut[start:end], color='black', label="dataOut")
+    # plt.plot(t2[start:end], y_res[start:end], color='red', label="Python")
+    # plt.legend()
+    # plt.show()
+
     assert len(y) != len(y_res)
 
     with open(os.path.join(Path(__file__).parent, "../data/resample_test3_y.csv"), "w") as f:
