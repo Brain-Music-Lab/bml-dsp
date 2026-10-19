@@ -2,16 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(bml-dsp)
 
-if (WIN32)
-
-  if (NOT DEFINED CMAKE_BUILD_TYPE)
-    message(FATAL_ERROR "CMAKE_BUILD_TYPE not set. Defaulting to 'Release'.")
-    set(CMAKE_BUILD_TYPE Release)
-  else()
-    message(STATUS "CMAKE_BUILD_TYPE IS ${CMAKE_BUILD_TYPE}")
-  endif()
-
-elseif (UNIX)
+if (!WIN32)
   if (CMAKE_BUILD_TYPE STREQUAL "")
       message(WARNING "CMAKE_BUILD_TYPE not set. Defaulting to 'Release'.")
       set(CMAKE_BUILD_TYPE Release)
@@ -47,23 +38,28 @@ add_library(bml-dsp
   # inline includes
 )
 
+if (WIN32)
+    if (CMAKE_BUILD_TYPE STREQUAL Debug)
+        target_compile_options(bml-dsp PUBLIC /MTd)
+    else ()
+        target_compile_options(bml-dsp PUBLIC /MT)
+    endif()
+endif()
+
 set_target_properties(bml-dsp PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 target_include_directories(bml-dsp 
   PRIVATE 
-    ${PROJECT_SOURCE_DIR}/include/bml-dsp
-
+    ${PROJECT_SOURCE_DIR}/include/bml-dsp/
   PUBLIC 
     ${PROJECT_SOURCE_DIR}/include
-    # ${PROJECT_SOURCE_DIR}/vendor/fftw/include/fftw
+    ${PROJECT_SOURCE_DIR}/deps/fftw/include
   )
-
-# target_compile_options(bml-dsp PUBLIC /MTd)
 
 if (WIN32)
   target_link_libraries(bml-dsp
     PUBLIC
-    # ${FFTW_LIB}
+    ${FFTW_LIB}
   )
 elseif (UNIX)
   target_link_libraries(bml-dsp
@@ -71,29 +67,6 @@ elseif (UNIX)
     PkgConfig::FFTW3
   )
 endif()
-
-
-# set_property(TARGET ${project_dir} PROPERTY
-#             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
-# if (UNIX)
-#   find_package(LSL 1.13.0 REQUIRED
-#     HINTS "/usr/local"
-#     "${CMAKE_CURRENT_LIST_DIR}/../../LSL/liblsl/build/"
-#     "${CMAKE_CURRENT_LIST_DIR}/../../LSL/liblsl/build/install"
-#     PATH_SUFFIXES share/LSL)
-
-#   target_link_libraries(bml-dsp PUBLIC fftw3 liblsl LSL::lsl)
-# endif(UNIX)
-
-# if (WIN32)
-
-    # target_include_directories(bml-dsp 
-    # PUBLIC
-    #   ${PROJECT_SOURCE_DIR}/vendor/fftw/include
-    #   "C:\\Program Files (x86)\\liblsl\\include")
-
-# Tests
 
 if (${CMAKE_SOURCE_DIR} STREQUAL ${PROJECT_SOURCE_DIR})
 

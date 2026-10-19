@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <complex>
-#include <fftw3.h>
+#include <fftw/fftw3.h>
 
 namespace BML
 {

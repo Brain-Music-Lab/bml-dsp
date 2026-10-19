@@ -12,3 +12,5 @@ Testing/
 *.csv
 .RData
 .Rhistory
+.venv/
+.dll

@@ -12,7 +12,7 @@ BML::CircularBuffer::CircularBuffer(size_t bufferSize) :
 {
     for (int i = 0; i < m_size; i++)
     {
-        m_dataVector.push_back(0.0);
+        m_dataVector = std::vector<double>(bufferSize, 0.0);
     }
 }
 
@@ -77,3 +77,10 @@ void BML::CircularBuffer::setReadPos(int value) { m_readPointer = value; }
 void BML::CircularBuffer::setWritePos(int value) { m_writerPointer = value; }
 int BML::CircularBuffer::getReadPos() { return m_readPointer; }
 int BML::CircularBuffer::getWritePos() { return m_writerPointer; }
+
+void BML::CircularBuffer::resetBuffer()
+{
+    m_dataVector = std::vector<double>(m_size, 0.0);
+    m_readPointer = 0;
+    m_writerPointer = 0;
+}

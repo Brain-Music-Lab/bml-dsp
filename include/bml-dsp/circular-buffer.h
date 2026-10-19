@@ -26,6 +26,7 @@ namespace BML
         void setReadPos(int value);
         int getWritePos();
         int getReadPos();
+        void resetBuffer();
 
     private:
         size_t m_size;

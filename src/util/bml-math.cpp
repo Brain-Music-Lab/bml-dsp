@@ -2,6 +2,7 @@
 #include <exception>
 #include <algorithm>
 #include <numeric>
+#include <iostream>
 
 namespace BML
 {
@@ -92,10 +93,13 @@ namespace BML
             std::vector<double> out;
             out.reserve(x.size());
 
+            std::cout << "sizes: " << x.size() << " " << xp.size() << " " << fp.size() << "\n";
+
             for (size_t i = 0; i < x.size(); i++)
             {
                 auto it = std::upper_bound(xp.begin(), xp.end(), x[i]);
                 if (it == xp.begin()) { out.emplace_back(fp.at(0)); }
+                else if (it == xp.end()) { out.emplace_back(fp.at(fp.size() - 1)); }
                 else
                 {
                     size_t idx = it - xp.begin();
@@ -107,7 +111,6 @@ namespace BML
                         fp.at(idx)
                     ));
                 }
-                
             }
 
             return out;
